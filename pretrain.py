@@ -23,6 +23,7 @@ def main(args):
     set_seed(args.seed)
     device = torch.device(f"cuda:{args.device}") if torch.cuda.is_available() else torch.device("cpu")
 
+
     DT_STRING = "".join(str(datetime.now()).split())
 
     # Load the full dataset, and download it if necessary
@@ -70,6 +71,7 @@ def main(args):
     testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
     valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
 
+    # model with projection head
     model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True, hidden_dim=2048).to(device)
 
     val_evaluator = Evaluator_PH(
@@ -79,7 +81,8 @@ def main(args):
         batch_size=args.test_batch_size,
         model=model,
         device=device,
-        verbose=False
+        verbose=False,
+        use_ph=True
     )
 
     if args.pretrain_method == "ERM":
@@ -121,7 +124,7 @@ def main(args):
     )
     evaluator.evaluate()
 
-    torch.save(model.state_dict(), 'pretrained_model_{args.pretrain_method}_{DT_STRING}.pt')
+    torch.save(model.state_dict(), f'pretrained_model_{args.pretrain_method}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')

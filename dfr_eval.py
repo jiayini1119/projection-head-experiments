@@ -63,12 +63,12 @@ def main(args):
 
     # load a trained model from checkpoint
     model = model_factory("resnet50", trainset[0][0].shape, 2, hidden_dim=2048).to(device)
-    ckpt_path = 'pretrained_model.pt'
+    ckpt_path = args.model_path
     state_dict = torch.load(ckpt_path)
     model.load_state_dict(state_dict)
 
     print(model)
-    
+
     group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition)
 
     dfr = DFR_PH(
@@ -108,8 +108,10 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=int, default=7, help="GPU number")
     parser.add_argument("--test-batch-size", type=int, default=64, help='Testing batch size')
     parser.add_argument('--seed', type=int, default=0, help="Seed for randomness")
-    parser.add_argument("--use_ph", action='store_true', help='Whether to use post projection head representationin DFR')
+    parser.add_argument("--use-ph", action='store_true', help='Whether to use post projection head representationin DFR')
     parser.add_argument("--test-freq", type=int, default=20, help='Test frequency')
+    parser.add_argument("--model-path", type=str, default=None, help='Path for the pretrained model')
+
 
     args = parser.parse_args()
 
