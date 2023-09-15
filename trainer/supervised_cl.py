@@ -9,7 +9,15 @@ from evaluator import Evaluator_PH
 from spuco.robust_train import BaseRobustTrain
 from spuco.utils.random_seed import seed_randomness
 from spuco.utils import Trainer
-from util.supcon_loss import SupConLoss
+from loss.supcon_loss import SupConLoss
+
+
+def forward_pass(self, batch):  
+    inputs, labels = batch
+    inputs, labels = inputs.to(self.device), labels.to(self.device)
+    outputs = self.model.get_representation(inputs, use_ph=True)
+    loss = self.criterion(outputs, labels)
+    return loss, outputs, labels
 
 class SCL(BaseRobustTrain):
     """
@@ -43,6 +51,7 @@ class SCL(BaseRobustTrain):
             lr_scheduler=lr_scheduler,
             max_grad_norm=max_grad_norm,
             criterion=criterion,
+            forward_pass=forward_pass,
             verbose=verbose,
             device=device
         )

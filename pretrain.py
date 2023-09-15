@@ -9,14 +9,13 @@ from spuco.utils import set_seed
 from wilds import get_dataset
 import torchvision.transforms as transforms
 from spuco.datasets import WILDSDatasetWrapper
-from spuco.datasets import GroupLabeledDatasetWrapper
 
 from models.model_factory import *
 from evaluator import Evaluator_PH
 from spuco.robust_train import ERM 
 from trainer.supervised_cl import SCL
 from torch.optim import SGD
-from util.supcon_loss import SupConLoss
+from loss.supcon_loss import SupConLoss
 
 def main(args):
 
@@ -71,6 +70,7 @@ def main(args):
     testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
     valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
 
+
     # model with projection head
     model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True, hidden_dim=2048).to(device)
 
@@ -84,6 +84,9 @@ def main(args):
         verbose=False,
         use_ph=True
     )
+
+    val_evaluator.evaluate()
+    print(val_evaluator.worst_group_accuracy)
 
     if args.pretrain_method == "ERM":
         base_trainer = ERM(
@@ -123,6 +126,8 @@ def main(args):
         use_ph=True
     )
     evaluator.evaluate()
+
+    print(evaluator.worst_group_accuracy)
 
     torch.save(model.state_dict(), f'pretrained_model_{args.pretrain_method}_{DT_STRING}.pt')
 
