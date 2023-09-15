@@ -1,6 +1,7 @@
 import torch 
 import argparse
 import wandb
+import random
 from spuco.datasets import WILDSDatasetWrapper
 from spuco.datasets import GroupLabeledDatasetWrapper
 from spuco.utils import set_seed
@@ -12,8 +13,6 @@ from models.model_factory import model_factory
 from evaluator import Evaluator_PH
 from dfr import DFR_PH
 
-from spuco.robust_train import ERM 
-from torch.optim import SGD
 
 from spuco.utils.random_seed import seed_randomness
 
@@ -61,15 +60,27 @@ def main(args):
     testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
     valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
 
+    if args.no_ph:
+        args.use_ph = False
+
+
     # load a trained model from checkpoint
-    model = model_factory("resnet50", trainset[0][0].shape, 2, hidden_dim=2048).to(device)
+    if args.no_ph:
+        model = model_factory("resnet50", trainset[0][0].shape, 2).to(device)
+    else:
+        model = model_factory("resnet50", trainset[0][0].shape, 2, hidden_dim=2048).to(device)
     ckpt_path = args.model_path
     state_dict = torch.load(ckpt_path)
     model.load_state_dict(state_dict)
 
-    print(model)
+    # print(model)
 
-    group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition)
+    if args.subset_size is None:
+        group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition)
+    else:
+        subset_indices = random.sample(range(len(valset)), args.subset_size)
+        
+        group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition, subset_indices=subset_indices)
 
     dfr = DFR_PH(
         group_labeled_set=group_labeled_set,
@@ -111,7 +122,8 @@ if __name__ == '__main__':
     parser.add_argument("--use-ph", action='store_true', help='Whether to use post projection head representationin DFR')
     parser.add_argument("--test-freq", type=int, default=20, help='Test frequency')
     parser.add_argument("--model-path", type=str, default=None, help='Path for the pretrained model')
-
+    parser.add_argument("--subset-size", type=int, default=None, help='size of subset of the labeled dataset')
+    parser.add_argument("--no-ph", action='store_true', help='Whether the model has no projection head')
 
     args = parser.parse_args()
 

@@ -63,6 +63,8 @@ class SpuCoModel(nn.Module):
         if use_ph and self.projection_head is None:
                     raise ValueError("No projection head for the model but use_ph is True")
 
+        # print("get representation", use_ph)
+
         encoder_rep = self.backbone(x)
         return self.projection_head(encoder_rep) if use_ph else encoder_rep
 
@@ -84,6 +86,8 @@ class SpuCoModel(nn.Module):
         
         if use_ph is None:
             use_ph = self.projection_head is not None
+
+        # print("forward", use_ph)
 
         encoder_rep = self.backbone(x)
         return self.classifier(self.projection_head(encoder_rep)) if use_ph else self.classifier(encoder_rep)

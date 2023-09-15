@@ -12,7 +12,7 @@ from spuco.datasets import WILDSDatasetWrapper
 
 from models.model_factory import *
 from evaluator import Evaluator_PH
-from spuco.robust_train import ERM 
+from trainer.erm import ERM 
 from trainer.supervised_cl import SCL
 from torch.optim import SGD
 from loss.supcon_loss import SupConLoss
@@ -71,8 +71,19 @@ def main(args):
     valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
 
 
-    # model with projection head
-    model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True, hidden_dim=2048).to(device)
+    if not args.without_ph:
+        # model with projection head
+        if args.random_init:
+            model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=False, hidden_dim=2048).to(device)
+        else:
+            model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True, hidden_dim=2048).to(device)
+    else:
+        if args.random_init:
+            model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=False).to(device)
+        else:
+            model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True).to(device)
+    
+    print(model)
 
     val_evaluator = Evaluator_PH(
         testset=valset,
@@ -82,7 +93,7 @@ def main(args):
         model=model,
         device=device,
         verbose=False,
-        use_ph=True
+        use_ph=not args.without_ph
     )
 
     val_evaluator.evaluate()
@@ -95,7 +106,7 @@ def main(args):
             trainset=trainset,
             val_evaluator=val_evaluator,
             batch_size=args.train_batch_size,
-            optimizer=SGD(model.parameters(), lr=1e-3, weight_decay=1e-3, momentum=0.9),
+            optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9),
             device=device,
             verbose=True
         )
@@ -107,9 +118,9 @@ def main(args):
             criterion=SupConLoss(),
             val_evaluator=val_evaluator,
             batch_size=args.train_batch_size,
-            optimizer=SGD(model.parameters(), lr=1e-3, weight_decay=1e-3, momentum=0.9),
+            optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9),
             device=device,
-            verbose=True
+            verbose=not args.without_ph
         )
 
 
@@ -123,7 +134,7 @@ def main(args):
         model=base_trainer.best_model,
         device=device,
         verbose=False,
-        use_ph=True
+        use_ph=not args.without_ph
     )
     evaluator.evaluate()
 
@@ -135,12 +146,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
     parser.add_argument('--device', type=int, default=7, help="GPU number")
     parser.add_argument('--lr', type=float, default=1e-03, help='learning rate') 
-    parser.add_argument("--train-batch-size", type=int, default=128, help='Training batch size')
+    parser.add_argument('--weight-decay', type=float, default=1e-03, help='learning rate') 
+    parser.add_argument("--train-batch-size", type=int, default=32, help='Training batch size')
     parser.add_argument("--test-batch-size", type=int, default=64, help='Testing batch size')
     parser.add_argument('--seed', type=int, default=0, help="Seed for randomness")
-    parser.add_argument('--num_epochs', type=int, default=300, help="number of epochs to train")
+    parser.add_argument('--num_epochs', type=int, default=100, help="number of epochs to train")
     parser.add_argument("--test-freq", type=int, default=20, help='Test frequency')
     parser.add_argument("--pretrain-method", type=str, default="ERM", choices=['ERM', 'SCL'], help='pretrain method')
+    parser.add_argument("--without-ph", action='store_true', help='Whether to not use projection head')
+    parser.add_argument("--random-init", action='store_true', help='Whether to use random initialization')
 
 
     args = parser.parse_args()
