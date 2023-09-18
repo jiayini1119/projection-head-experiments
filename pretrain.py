@@ -25,9 +25,11 @@ def main(args):
 
     if not args.without_ph:
         # model with projection head
-        model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048).to(device)
+        model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
     else:
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init).to(device)
+
+    # print(model)
     
     val_evaluator = Evaluator_PH(
         testset=valset,
@@ -84,7 +86,7 @@ def main(args):
 
     print(evaluator.worst_group_accuracy)
 
-    torch.save(model.state_dict(), f'pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
+    torch.save(model.state_dict(), f'two_layer_pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
@@ -100,6 +102,7 @@ if __name__ == '__main__':
     parser.add_argument("--pretrain-method", type=str, default="ERM", choices=['ERM', 'SCL'], help='pretrain method')
     parser.add_argument("--without-ph", action='store_true', help='Whether to not use projection head')
     parser.add_argument("--random-init", action='store_true', help='Whether to use random initialization')
+    parser.add_argument("--mult-layer", action='store_true', help='Whether to use projection head with two hidden layers')
     parser.add_argument("--temperature", type=float, default=0.5, help='temperature for supervised contrastive loss')
 
 

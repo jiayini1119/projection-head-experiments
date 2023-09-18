@@ -17,6 +17,7 @@ class SpuCoModel(nn.Module):
         backbone: nn.Module, 
         representation_dim: int,
         num_classes: int,
+        mult_layer: bool = False,
         hidden_dim: Optional[int] = None,
     ):
         """
@@ -38,11 +39,20 @@ class SpuCoModel(nn.Module):
 
         # Projection head 
         if hidden_dim is not None:
-            self.projection_head = nn.Sequential(
-                nn.Linear(representation_dim, hidden_dim),
-                nn.ReLU(),
-                nn.Linear(hidden_dim, representation_dim)
-            )
+            if not mult_layer:
+                self.projection_head = nn.Sequential(
+                    nn.Linear(representation_dim, hidden_dim),
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, representation_dim)
+                )
+            else:
+                self.projection_head = nn.Sequential(
+                    nn.Linear(representation_dim, hidden_dim), 
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, hidden_dim),  
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, representation_dim)  
+                )
         else:
             self.projection_head = None
 
