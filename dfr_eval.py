@@ -2,18 +2,15 @@ import torch
 import argparse
 import wandb
 import random
-from spuco.datasets import WILDSDatasetWrapper
 from spuco.datasets import GroupLabeledDatasetWrapper
 from spuco.utils import set_seed
-from wilds import get_dataset
-import torchvision.transforms as transforms
 import numpy as np
 
 from models.model_factory import model_factory 
 from evaluator import Evaluator_PH
 from dfr import DFR_PH
 
-
+from dataset import get_split_dataset
 from spuco.utils.random_seed import seed_randomness
 
 
@@ -26,43 +23,12 @@ def main(args):
     set_seed(args.seed)
     device = torch.device(f"cuda:{args.device}") if torch.cuda.is_available() else torch.device("cpu")
 
-    # Load the full dataset, and download it if necessary
-    dataset = get_dataset(dataset="waterbirds", download=True, root_dir="/home/data")
+    trainset, testset, valset = get_split_dataset(named_dataset=args.dataset)
 
-    target_resolution = (224, 224)
-    scale = 256.0 / 224.0
-    transform = transforms.Compose([
-            transforms.Resize((int(target_resolution[0]*scale), int(target_resolution[1]*scale))),
-            transforms.CenterCrop(target_resolution),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-
-    # Get the training set
-    train_data = dataset.get_subset(
-        "train",
-        transform=transform
-    )
-
-    # Get the test set
-    test_data = dataset.get_subset(
-        "test",
-        transform=transform
-    )
-
-    # Get the val set
-    val_data = dataset.get_subset(
-        "val",
-        transform=transform
-    )
-
-    trainset = WILDSDatasetWrapper(dataset=train_data, metadata_spurious_label="background", verbose=True)
-    testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
-    valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
+    print(len(valset))
 
     if args.no_ph:
         args.use_ph = False
-
 
     # load a trained model from checkpoint
     if args.no_ph:
@@ -79,7 +45,7 @@ def main(args):
         group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition)
     else:
         subset_indices = random.sample(range(len(valset)), args.subset_size)
-        
+                
         group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition, subset_indices=subset_indices)
 
     dfr = DFR_PH(
@@ -110,13 +76,17 @@ def main(args):
     print(evaluator.worst_group_accuracy)
     print(evaluator.average_accuracy)
 
+    print(evaluator.accuracies)
     # wandb.log({"worst group accuracy": evaluator.worst_group_accuracy})
     # wandb.log({"average accuracy": evaluator.average_accuracy})
+
+    return evaluator.worst_group_accuracy[1], evaluator.average_accuracy
 
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
     parser.add_argument('--device', type=int, default=7, help="GPU number")
+    parser.add_argument('--dataset', type=str, default="waterbirds", choices=['waterbirds', 'celebA'], help='dataset to use')
     parser.add_argument("--test-batch-size", type=int, default=64, help='Testing batch size')
     parser.add_argument('--seed', type=int, default=0, help="Seed for randomness")
     parser.add_argument("--use-ph", action='store_true', help='Whether to use post projection head representationin DFR')
@@ -128,4 +98,29 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args)
+
+    # # Try multiple seeds
+
+    # seeds = [0, 10, 20, 30, 40]  
+    # worst_group_accuracies = []
+    # average_accuracies = []
+
+    # for seed in seeds:
+    #     args = parser.parse_args()
+    #     args.seed = seed  
+    #     worst_group_accuracy, average_accuracy = main(args)
+        
+    #     worst_group_accuracies.append(worst_group_accuracy)
+    #     average_accuracies.append(average_accuracy)
+
+    # avg_worst_group_accuracy = np.mean(worst_group_accuracies)
+    # std_worst_group_accuracy = np.std(worst_group_accuracies)
+    
+    # avg_average_accuracy = np.mean(average_accuracies)
+    # std_average_accuracy = np.std(average_accuracies)
+
+    # print(f"Worst Group Accuracy: {avg_worst_group_accuracy * 100:.1f}±{std_worst_group_accuracy * 100:.1f}")
+    # print(f"Average Accuracy: {avg_average_accuracy * 100:.1f}±{std_average_accuracy * 100:.1f}")
+
+
 
