@@ -45,6 +45,7 @@ class DFR_PH(DFR):
                     inputs, labels = batch
                     inputs, labels = inputs.to(self.device), labels.to(self.device)
                 X_train.append(self.model.get_representation(inputs, use_ph=self.use_ph))
+
                 y_train.append(labels)
                     
             if labeled:
