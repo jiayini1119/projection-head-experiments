@@ -1,6 +1,8 @@
 import random
 import torch
 import numpy as np
+from torch import nn
+from typing import Optional
 from spuco.evaluate import Evaluator
 from torch.utils.data import DataLoader
 
@@ -10,12 +12,14 @@ class Evaluator_PH(Evaluator):
     def __init__(
         self,
         use_ph: bool = False,
+        mlp: Optional[nn.Module] = None,
         *args,
         **kwargs
     ):
         seed_randomness(torch_module=torch, numpy_module=np, random_module=random)
         super().__init__(*args, **kwargs)
         self.use_ph = use_ph
+        self.mlp = mlp
     
     def _encode_testset(self, testloader):
         X_test = []
@@ -35,8 +39,11 @@ class Evaluator_PH(Evaluator):
             total = 0    
             for inputs, labels in testloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
-                outputs = self.model(inputs, use_ph=self.use_ph)
+                if self.mlp is not None:
+                    outputs = self.mlp(self.model.get_representation(inputs, use_ph=self.use_ph))
+                else:
+                    outputs = self.model(inputs, use_ph=self.use_ph)
                 predicted = torch.argmax(outputs, dim=1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-            return 100 * correct / total
+            return 100 * correct / total  

@@ -8,7 +8,7 @@ import numpy as np
 
 from models.model_factory import model_factory 
 from evaluator import Evaluator_PH
-from dfr import DFR_PH
+from dfr import DFR_PH, DFR_MLP
 
 from dataset import get_split_dataset
 from spuco.utils.random_seed import seed_randomness
@@ -23,7 +23,7 @@ def main(args):
     set_seed(args.seed)
     device = torch.device(f"cuda:{args.device}") if torch.cuda.is_available() else torch.device("cpu")
 
-    trainset, testset, valset = get_split_dataset(named_dataset=args.dataset)
+    trainset, testset, valset = get_split_dataset(named_dataset=args.dataset, augment=False)
 
     print(len(valset))
 
@@ -48,14 +48,25 @@ def main(args):
                 
         group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition, subset_indices=subset_indices)
 
-    dfr = DFR_PH(
-        group_labeled_set=group_labeled_set,
-        model=model,
-        data_for_scaler=trainset,
-        device=device,
-        verbose=True,
-        use_ph=args.use_ph,
-    )
+    if not args.use_mlp:
+        dfr = DFR_PH(
+            group_labeled_set=group_labeled_set,
+            model=model,
+            data_for_scaler=trainset,
+            device=device,
+            verbose=True,
+            use_ph=args.use_ph,
+        )
+
+    # else:
+    #     dfr = DFR_MLP(
+    #         group_labeled_set=group_labeled_set,
+    #         model=model,
+    #         data_for_scaler=trainset,
+    #         device=device,
+    #         verbose=True,
+    #         use_ph=args.use_ph,
+    #     )
 
     dfr.train()
 
@@ -95,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument("--model-path", type=str, default=None, help='Path for the pretrained model')
     parser.add_argument("--subset-size", type=int, default=None, help='size of subset of the labeled dataset')
     parser.add_argument("--no-ph", action='store_true', help='Whether the model has no projection head')
+    parser.add_argument("--use-mlp", action='store_true', help='Whether to train a non-linear model on top of the representations')
 
     args = parser.parse_args()
 
