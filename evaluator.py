@@ -7,12 +7,15 @@ from spuco.evaluate import Evaluator
 from torch.utils.data import DataLoader
 
 from spuco.utils.random_seed import seed_randomness
+from sklearn.preprocessing import StandardScaler
+
 
 class Evaluator_PH(Evaluator):
     def __init__(
         self,
         use_ph: bool = False,
         mlp: Optional[nn.Module] = None,
+        scaler: Optional[StandardScaler] = None,
         *args,
         **kwargs
     ):
@@ -20,6 +23,7 @@ class Evaluator_PH(Evaluator):
         super().__init__(*args, **kwargs)
         self.use_ph = use_ph
         self.mlp = mlp
+        self.scaler = scaler
     
     def _encode_testset(self, testloader):
         X_test = []
@@ -40,7 +44,14 @@ class Evaluator_PH(Evaluator):
             for inputs, labels in testloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 if self.mlp is not None:
-                    outputs = self.mlp(self.model.get_representation(inputs, use_ph=self.use_ph))
+                    if self.scaler:
+                        representations = self.model.get_representation(inputs, use_ph=self.use_ph)
+                        representations = representations.detach().cpu().numpy()
+                        representations = self.scaler.transform(representations)
+                        representations = torch.from_numpy(representations).float().to(self.device)
+                        outputs = self.mlp(representations)
+                    else:
+                        outputs = self.mlp(self.model.get_representation(inputs, use_ph=self.use_ph))
                 else:
                     outputs = self.model(inputs, use_ph=self.use_ph)
                 predicted = torch.argmax(outputs, dim=1)

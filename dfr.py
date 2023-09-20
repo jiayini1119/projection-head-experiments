@@ -1,9 +1,8 @@
 import random
 import torch
-from typing import Optional
 import numpy as np
 from spuco.last_layer_retrain import DFR
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from spuco.utils.random_seed import seed_randomness
 from spuco.datasets import GroupLabeledDatasetWrapper
 from models.spuco_model import SpuCoModel
@@ -60,35 +59,23 @@ class DFR_PH(DFR):
 
 
 
-class DFR_MLP():
+class DFR_MLP(DFR_PH):
     def __init__(
         self,
-        group_labeled_set: GroupLabeledDatasetWrapper,
-        model: SpuCoModel,
-        num_epochs: int = 300,
-        weight_decay: float = 1e-4,
-        lr: float = 1e-3,
+        num_epochs: int = 1000,
+        weight_decay: float = 0,
+        lr: float = 1e-1,
         hidden_dim: int = 2048,
-        verbose: bool = False,
-        device: torch.device = torch.device("cpu"),
-        data_for_scaler: Optional[Dataset] = None,
-        use_ph: bool = False
+        *args,
+        **kwargs
     ):
         seed_randomness(torch_module=torch, numpy_module=np, random_module=random)
 
-        self.group_labeled_set = group_labeled_set
-        self.model = model 
-        self.device = device 
-        self.verbose = verbose
-        self.data_for_scaler = data_for_scaler
-        self.scaler = None
-        self.preprocess = self.data_for_scaler is not None
-        self.use_ph = use_ph
+        super().__init__(*args, **kwargs)
 
         self.num_epochs = num_epochs
         self.weight_decay = weight_decay
         self.lr = lr
-        
         self.hidden_dim = hidden_dim
 
 
@@ -107,12 +94,18 @@ class DFR_MLP():
         X_train_balanced = np.concatenate(X_train_balanced)
         y_train_balanced = np.concatenate(y_train_balanced)
 
+        X_train_balanced = torch.from_numpy(X_train_balanced).float().to(self.device)
+        y_train_balanced = torch.from_numpy(y_train_balanced).long().to(self.device)
+
+
         # MLP
         self.mlp = nn.Sequential(
             nn.Linear(X_train_balanced.shape[1], self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, 2)
         )
+
+        self.mlp.to(self.device)
 
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -127,7 +120,7 @@ class DFR_MLP():
             loss.backward()
             optimizer.step()
             schedule.step()
-            acc = (torch.argmax(pred, -1) == y_train).detach().float().mean()
+            acc = (torch.argmax(pred, -1) == y_train_balanced).detach().float().mean()
             if self.verbose and epoch % (self.num_epochs // 10) == 0:
                 print(epoch, acc)
 
@@ -154,39 +147,4 @@ class DFR_MLP():
                 self.scaler.fit(X_labeled)
             X_labeled = self.scaler.transform(X_labeled)
     
-        self.train_multiple_model(X_labeled, y_labeled, g_labeled)
-
-    def encode_dataset(self, dataset):
-        labeled = type(dataset) == GroupLabeledDatasetWrapper
-
-        X_train = []
-        y_train = []
-        if labeled:
-            g_train = []
-
-        trainloader = DataLoader(
-            dataset=dataset, 
-            batch_size=100,
-            shuffle=False,
-            num_workers=4, 
-            pin_memory=True
-        )
-
-        self.model.eval()
-        with torch.no_grad():
-            for batch in trainloader:
-                if labeled:
-                    inputs, labels, groups = batch
-                    inputs, labels, groups = inputs.to(self.device), labels.to(self.device), groups.to(self.device)
-                    g_train.append(groups)
-                else:
-                    inputs, labels = batch
-                    inputs, labels = inputs.to(self.device), labels.to(self.device)
-                X_train.append(self.model.get_representation(inputs, use_ph=self.use_ph))
-
-                y_train.append(labels)
-                    
-            if labeled:
-                return torch.cat(X_train), torch.cat(y_train), torch.cat(g_train)
-            else:
-                return torch.cat(X_train), torch.cat(y_train)
+        self.train_single_model(X_labeled, y_labeled, g_labeled)

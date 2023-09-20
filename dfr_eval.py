@@ -39,7 +39,7 @@ def main(args):
     state_dict = torch.load(ckpt_path)
     model.load_state_dict(state_dict)
 
-    print(model)
+    # print(model)
 
     if args.subset_size is None:
         group_labeled_set = GroupLabeledDatasetWrapper(dataset=valset, group_partition=valset.group_partition)
@@ -58,15 +58,16 @@ def main(args):
             use_ph=args.use_ph,
         )
 
-    # else:
-    #     dfr = DFR_MLP(
-    #         group_labeled_set=group_labeled_set,
-    #         model=model,
-    #         data_for_scaler=trainset,
-    #         device=device,
-    #         verbose=True,
-    #         use_ph=args.use_ph,
-    #     )
+    else:
+        dfr = DFR_MLP(
+            lr= 0.1 if args.dataset == "waterbirds" else 0.001,
+            group_labeled_set=group_labeled_set,
+            model=model,
+            data_for_scaler=trainset,
+            device=device,
+            verbose=True,
+            use_ph=args.use_ph,
+        )
 
     dfr.train()
 
@@ -76,11 +77,14 @@ def main(args):
         group_weights=trainset.group_weights,
         batch_size=args.test_batch_size,
         model=model,
-        sklearn_linear_model=dfr.linear_model,
+        sklearn_linear_model=dfr.linear_model if not args.use_mlp else None,
+        mlp=dfr.mlp if args.use_mlp else None,
+        scaler=dfr.scaler if args.use_mlp else None,
         device=device,
         verbose=False,
         use_ph=args.use_ph,
-        )
+    )
+
 
     evaluator.evaluate()
 

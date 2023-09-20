@@ -29,7 +29,7 @@ def main(args):
     else:
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init).to(device)
 
-    # print(model)
+    print(model)
     
     val_evaluator = Evaluator_PH(
         testset=valset,
