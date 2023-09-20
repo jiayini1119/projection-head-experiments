@@ -38,8 +38,11 @@ args = parser.parse_args()
 
 device = torch.device(f"cuda:{args.device}") if torch.cuda.is_available() else torch.device("cpu")
 
-def get_embed(m, x, use_prev_block: bool=False):
-    if args.without_ph:
+def get_embed(m, x, use_prev_block: bool=False, without_ph: bool=True, use_ph: bool=False):
+    if not without_ph and use_prev_block:
+        raise ValueError("Cannot use previous block and projection head at the same time")
+    
+    if without_ph:
         x = m.conv1(x)
         x = m.bn1(x)
         x = m.relu(x)
@@ -60,7 +63,8 @@ def get_embed(m, x, use_prev_block: bool=False):
         return x
 
     else:
-        x = m.get_representation(x, use_ph = args.use_ph)
+        x = m.get_representation(x, use_ph=use_ph)
+        return x
 
 resize_size, crop_size = 256, 224
 
@@ -88,13 +92,13 @@ if args.without_ph:
     else:
         model = torchvision.models.resnet50(pretrained=False).to(device)
         # TODO: remove projection head
-        state_dict = torch.load("path-to-simclr-model")
+        state_dict = torch.load("path-to-simclr-model", map_location=device)
         model.load_state_dict(state_dict)
     
 else:
-    # num classes change!
-    model = model_factory("resnet50", loader[0][0].shape, 2, hidden_dim=2048).to(device)
-    state_dict = torch.load("imagenet_pretrained_model.pt")
+    model = model_factory("resnet50", ds[0][0].shape, 1000, hidden_dim=2048).to(device)
+    checkpoint = torch.load('imagenet_pretrained_model.pt', map_location=device) 
+    state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
     model.load_state_dict(state_dict)
 
 
@@ -106,7 +110,7 @@ all_y = []
 not_printed = True
 for x, y in tqdm.tqdm(loader):
     with torch.no_grad():
-        embed = get_embed(model, x.to(device), use_prev_block=args.use_prev_block).detach().cpu().numpy() 
+        embed = get_embed(model, x.to(device), use_prev_block=args.use_prev_block, without_ph=args.without_ph, use_ph=args.use_ph).detach().cpu().numpy() 
         all_embeddings.append(embed)
         all_y.append(y.detach().cpu().numpy())
         if not_printed:
