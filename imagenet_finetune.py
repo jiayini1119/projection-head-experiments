@@ -9,6 +9,8 @@ import time
 import warnings
 from enum import Enum
 from models.model_factory import *
+from datetime import datetime
+
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -113,6 +115,7 @@ def main():
 
 
 def main_worker(gpu, ngpus_per_node, args):
+    DT_STRING = "".join(str(datetime.now()).split())
     global best_acc1
     args.gpu = gpu
 
@@ -277,7 +280,7 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
 
-            torch.save(model.state_dict(), "imagenet_pretrained_model.pt")
+            torch.save(model.state_dict(), f"imagenet_pretrained_model_{DT_STRING}.pt")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, args):
