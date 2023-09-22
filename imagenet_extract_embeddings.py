@@ -97,7 +97,7 @@ if args.without_ph:
     
 else:
     model = model_factory("resnet50", ds[0][0].shape, 1000, hidden_dim=2048).to(device)
-    checkpoint = torch.load('imagenet_pretrained_model.pt', map_location=device) 
+    checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2020:05:35.080839.pt", map_location=device) 
     state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
     model.load_state_dict(state_dict)
 
@@ -124,6 +124,6 @@ all_y = np.concatenate(all_y)
 
 np.savez(os.path.join(
         args.dataset_dir,
-        f"ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+        f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
     embeddings=all_embeddings,
     labels=all_y)
