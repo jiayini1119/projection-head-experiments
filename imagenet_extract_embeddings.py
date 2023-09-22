@@ -58,6 +58,13 @@ def get_embed(m, x, use_prev_block: bool=False, without_ph: bool=True, use_ph: b
         else:
             x = m.layer4[0](x)
             x = m.layer4[1](x)
+            bottleneck = m.layer4[2]
+            x = bottleneck.conv1(x)
+            x = bottleneck.bn1(x)
+            x = bottleneck.relu(x)
+            x = bottleneck.conv2(x)
+            x = bottleneck.bn2(x)
+            x = bottleneck.relu(x)
             x = m.avgpool(x)
             x = torch.flatten(x, 1)
         return x
@@ -122,8 +129,15 @@ all_y = np.concatenate(all_y)
 
 
 
+# np.savez(os.path.join(
+#         args.dataset_dir,
+#         f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+#     embeddings=all_embeddings,
+#     labels=all_y)
+
+
 np.savez(os.path.join(
         args.dataset_dir,
-        f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+        f"new_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
     embeddings=all_embeddings,
     labels=all_y)

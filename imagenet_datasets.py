@@ -16,7 +16,7 @@ def get_imagenet(datapath, split, transform, batch_size, shuffle):
     ds = torchvision.datasets.ImageNet(
         root=datapath, split=split, transform=transform)
     loader = torch.utils.data.DataLoader(
-        ds, shuffle=shuffle, batch_size=batch_size)
+        ds, shuffle=shuffle, num_workers=5, batch_size=batch_size)
     return ds, loader
 
 
@@ -26,7 +26,7 @@ def get_bg_challenge(datapath, split, transform, batch_size, shuffle):
         transform=transform
         )
     loader = torch.utils.data.DataLoader(
-        ds, shuffle=shuffle, batch_size=batch_size)
+        ds, shuffle=shuffle, num_workers=5, batch_size=batch_size)
     return ds, loader
 
 
@@ -47,7 +47,7 @@ def get_imagenet_arc(
         target_transform=lambda y: label_mapping[y]
     )
     loader = torch.utils.data.DataLoader(
-        ds, shuffle=shuffle, batch_size=batch_size)
+        ds, shuffle=shuffle, num_workers=5, batch_size=batch_size)
     return ds, loader
 
 
