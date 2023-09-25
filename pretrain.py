@@ -25,7 +25,47 @@ def main(args):
 
     if not args.without_ph:
         # model with projection head
+        # model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+        # # model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+
+        # # Method 1 (finetune entire model, only load pretrained projection head # TODO: wrong, since classifier should be rand init)
+        # model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=True, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2020:05:35.080839.pt", map_location=device)
+        # state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+
+        # projection_head_params = {
+        #     'projection_head.0.weight': state_dict['projection_head.0.weight'],
+        #     'projection_head.0.bias': state_dict['projection_head.0.bias'],
+        #     'projection_head.2.weight': state_dict['projection_head.2.weight'],
+        #     'projection_head.2.bias': state_dict['projection_head.2.bias'],
+        # }
+
+        # model.load_state_dict(projection_head_params, strict=False)
+
+        # # Method 2 (use finetuned for both, classifier is rand init)
+        # model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=False, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2020:05:35.080839.pt", map_location=device)
+        # new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items() if not k.startswith('module.classifier')}
+        # model.load_state_dict(new_state_dict, strict=False)
+
+        # # Method 3 (fix encoder finetune projection head)
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+
+
+        checkpoint = torch.load("/home/jennyni/projection-head-experiments/pretrained_projection_head", map_location=device)
+        state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+
+        projection_head_params = {
+            'projection_head.0.weight': state_dict['projection_head.0.weight'],
+            'projection_head.0.bias': state_dict['projection_head.0.bias'],
+            'projection_head.2.weight': state_dict['projection_head.2.weight'],
+            'projection_head.2.bias': state_dict['projection_head.2.bias'],
+        }
+
+        model.load_state_dict(projection_head_params, strict=False)
+
+
+
     else:
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init).to(device)
 
@@ -86,7 +126,7 @@ def main(args):
 
     print(evaluator.worst_group_accuracy)
 
-    torch.save(model.state_dict(), f'two_layer_pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
+    torch.save(model.state_dict(), f'method3_pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')

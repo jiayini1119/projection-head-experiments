@@ -7,6 +7,14 @@ from torch import nn
 from typing import Optional
 from spuco.utils.random_seed import seed_randomness
 
+from collections import OrderedDict
+
+
+class BatchNorm1dNoBias(nn.BatchNorm1d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bias.requires_grad = False
+
 class SpuCoModel(nn.Module):
     """
     Wrapper module to allow for methods that use penultimate layer embeddings
@@ -45,6 +53,17 @@ class SpuCoModel(nn.Module):
                     nn.ReLU(),
                     nn.Linear(hidden_dim, representation_dim)
                 )
+
+                # projection_layers = [
+                #     ('fc1', nn.Linear(representation_dim, hidden_dim, bias=False)),
+                #     ('bn1', nn.BatchNorm1d(hidden_dim)),
+                #     ('relu1', nn.ReLU()),
+                #     ('fc2', nn.Linear(hidden_dim, representation_dim, bias=False)),
+                #     ('bn2', BatchNorm1dNoBias(representation_dim)),
+                # ]
+
+                # self.projection = nn.Sequential(OrderedDict(projection_layers))
+
             else:
                 self.projection_head = nn.Sequential(
                     nn.Linear(representation_dim, hidden_dim), 

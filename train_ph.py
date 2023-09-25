@@ -31,7 +31,7 @@ parser.add_argument('data', metavar='DIR', nargs='?', default='imagenet',
                     help='path to dataset (default: imagenet)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
+parser.add_argument('--epochs', default=20, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -180,6 +180,12 @@ def main_worker(gpu, ngpus_per_node, args):
         model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True)
     else:
         model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True, hidden_dim=2048)
+        for name, param in model.named_parameters():
+            if not name.startswith('projection_head') and not name.startswith('classifier'):
+                param.requires_grad = False
+
+        for name, param in model.named_parameters():
+            print(name, "requires grad: ", param.requires_grad)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -224,7 +230,11 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().to(device)
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    #                             momentum=args.momentum,
+    #                             weight_decay=args.weight_decay)
+
+    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
@@ -285,10 +295,11 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
 
-            if not args.use_original:
-                torch.save(model.state_dict(), f"imagenet_pretrained_model_{DT_STRING}.pt")
-            else:
-                torch.save(model.state_dict(), f"original_pretrained_model.pt")
+            # if not args.use_original:
+            #     torch.save(model.state_dict(), f"imagenet_pretrained_model_{DT_STRING}.pt")
+            # else:
+            #     torch.save(model.state_dict(), f"original_pretrained_model.pt")
+            torch.save(model.state_dict(), "pretrained_projection_head")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, args):

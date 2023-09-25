@@ -34,7 +34,7 @@ class DFR_PH(DFR):
             dataset=dataset, 
             batch_size=100,
             shuffle=False,
-            num_workers=4, 
+            num_workers=5, 
             pin_memory=True
         )
 
