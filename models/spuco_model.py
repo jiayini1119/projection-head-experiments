@@ -7,6 +7,19 @@ from torch import nn
 from typing import Optional
 from spuco.utils.random_seed import seed_randomness
 
+import torch.nn.functional as F
+
+
+class SymmetricReLU(nn.Module):
+    def __init__(self, b=0.0):
+        super(SymmetricReLU, self).__init__()
+        self.b = nn.Parameter(torch.tensor(b))  
+
+    def forward(self, x):
+        relu_pos = F.relu(x - self.b)
+        relu_neg = F.relu(-x - self.b)
+        return relu_pos - relu_neg
+
 class SpuCoModel(nn.Module):
     """
     Wrapper module to allow for methods that use penultimate layer embeddings
@@ -18,6 +31,7 @@ class SpuCoModel(nn.Module):
         representation_dim: int,
         num_classes: int,
         mult_layer: bool = False,
+        identity_init: bool = False,
         hidden_dim: Optional[int] = None,
     ):
         """
@@ -40,21 +54,26 @@ class SpuCoModel(nn.Module):
         # Projection head 
         if hidden_dim is not None:
             if not mult_layer:
-                self.projection_head = nn.Sequential(
-                    nn.Linear(representation_dim, hidden_dim),
-                    nn.ReLU(),
-                    nn.Linear(hidden_dim, representation_dim),
-                    nn.ReLU(),
-                )
-
-            else:
-                self.projection_head = nn.Sequential(
-                    nn.Linear(representation_dim, hidden_dim), 
-                    nn.ReLU(),
-                    nn.Linear(hidden_dim, hidden_dim),  
-                    nn.ReLU(),
-                    nn.Linear(hidden_dim, representation_dim)  
-                )
+                if not identity_init:
+                    self.projection_head = nn.Sequential(
+                        nn.Linear(representation_dim, hidden_dim),
+                        nn.ReLU(),
+                        nn.Linear(hidden_dim, representation_dim),
+                        nn.ReLU(),
+                    )
+                else:
+                    # initialize the projection head as an identity function
+                    self.projection_head = nn.Sequential(
+                        nn.Linear(representation_dim, hidden_dim),
+                        SymmetricReLU(),
+                        nn.Linear(hidden_dim, representation_dim),
+                        SymmetricReLU(),
+                    )
+                     
+                    self.projection_head[0].weight.data.copy_(torch.eye(representation_dim))
+                    self.projection_head[0].bias.data.fill_(0)
+                    self.projection_head[2].weight.data.copy_(torch.eye(hidden_dim))
+                    self.projection_head[2].bias.data.fill_(0)
         else:
             self.projection_head = None
 

@@ -34,7 +34,7 @@ def main(args):
     if args.no_ph:
         model = model_factory("resnet50", trainset[0][0].shape, 2).to(device)
     else:
-        model = model_factory("resnet50", trainset[0][0].shape, 2, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+        model = model_factory("resnet50", trainset[0][0].shape, 2, hidden_dim=2048, mult_layer=args.mult_layer, identity_init=args.identity_init).to(device)
     ckpt_path = args.model_path
     state_dict = torch.load(ckpt_path, map_location=device)
     model.load_state_dict(state_dict)
@@ -111,6 +111,8 @@ if __name__ == '__main__':
     parser.add_argument("--subset-size", type=int, default=None, help='size of subset of the labeled dataset')
     parser.add_argument("--no-ph", action='store_true', help='Whether the model has no projection head')
     parser.add_argument("--use-mlp", action='store_true', help='Whether to train a non-linear model on top of the representations')
+    parser.add_argument("--identity-init", action='store_true', help='Whether to initialize projection head as identity')
+
 
     args = parser.parse_args()
 

@@ -25,7 +25,7 @@ def main(args):
 
     if not args.without_ph:
         # model with projection head
-        model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
+        model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer, identity_init=args.identity_init).to(device)
         # # # model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer).to(device)
 
         # # # Method 1 (finetune entire model, only load pretrained projection head # TODO: wrong, since classifier should be rand init)
@@ -70,7 +70,7 @@ def main(args):
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init).to(device)
 
     print(model)
-    
+
     val_evaluator = Evaluator_PH(
         testset=valset,
         group_partition=valset.group_partition,
@@ -82,8 +82,8 @@ def main(args):
         use_ph=not args.without_ph
     )
 
-    # val_evaluator.evaluate()
-    # print(val_evaluator.worst_group_accuracy)
+    val_evaluator.evaluate()
+    print(val_evaluator.worst_group_accuracy)
 
     if args.pretrain_method == "ERM":
         base_trainer = ERM(
@@ -126,8 +126,7 @@ def main(args):
 
     print(evaluator.worst_group_accuracy)
 
-    # torch.save(model.state_dict(), f'relu_pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
-    torch.save(model.state_dict(), 'ori_celebA')
+    torch.save(model.state_dict(), f'with_relu_ph_identity_pretrained_model_{args.dataset}_{args.pretrain_method}_{args.seed}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
@@ -143,6 +142,8 @@ if __name__ == '__main__':
     parser.add_argument("--pretrain-method", type=str, default="ERM", choices=['ERM', 'SCL'], help='pretrain method')
     parser.add_argument("--without-ph", action='store_true', help='Whether to not use projection head')
     parser.add_argument("--random-init", action='store_true', help='Whether to use random initialization')
+    parser.add_argument("--identity-init", action='store_true', help='Whether to initialize projection head as identity')
+
     parser.add_argument("--mult-layer", action='store_true', help='Whether to use projection head with two hidden layers')
     parser.add_argument("--temperature", type=float, default=0.5, help='temperature for supervised contrastive loss')
 
