@@ -11,6 +11,9 @@ from enum import Enum
 from models.model_factory import *
 from datetime import datetime
 
+import torchvision.models as models
+
+
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -181,6 +184,20 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True, hidden_dim=2048)
 
+        # freeze blocks 1-3 and only re-train block 4 with additional projection head from scratch.
+        for name, param in model.named_parameters():
+            if not name.startswith('projection_head') and not name.startswith('classifier') and not name.startswith('backbone.layer4'):
+                param.requires_grad = False
+
+        default_resnet = models.resnet50()
+
+        for (name, param), (default_name, default_param) in zip(model.named_parameters(), default_resnet.named_parameters()):
+            if name.startswith('backbone.layer4'):
+                param.data = default_param.data.clone()
+
+        for name, param in model.named_parameters():
+            print(name, "requires grad: ", param.requires_grad)
+
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
     elif args.distributed:
@@ -224,7 +241,11 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().to(device)
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    #                             momentum=args.momentum,
+    #                             weight_decay=args.weight_decay)
+
+    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
@@ -286,7 +307,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # }, is_best)
 
             if not args.use_original:
-                torch.save(model.state_dict(), f"new_imagenet_pretrained_model_{DT_STRING}.pt")
+                torch.save(model.state_dict(), f"no_relu_imagenet_pretrained_model_{DT_STRING}.pt")
             else:
                 torch.save(model.state_dict(), f"original_pretrained_model.pt")
 

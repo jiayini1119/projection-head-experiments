@@ -44,7 +44,7 @@ class SpuCoModel(nn.Module):
                     nn.Linear(representation_dim, hidden_dim),
                     nn.ReLU(),
                     nn.Linear(hidden_dim, representation_dim),
-                    # nn.ReLU(),
+                    nn.ReLU(),
                 )
 
             else:
