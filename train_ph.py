@@ -299,7 +299,7 @@ def main_worker(gpu, ngpus_per_node, args):
             #     torch.save(model.state_dict(), f"imagenet_pretrained_model_{DT_STRING}.pt")
             # else:
             #     torch.save(model.state_dict(), f"original_pretrained_model.pt")
-            torch.save(model.state_dict(), "pretrained_projection_head")
+            torch.save(model.state_dict(), "with_relu_pretrained_projection_head.pt")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, args):

@@ -286,7 +286,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # }, is_best)
 
             if not args.use_original:
-                torch.save(model.state_dict(), f"imagenet_pretrained_model_{DT_STRING}.pt")
+                torch.save(model.state_dict(), f"new_imagenet_pretrained_model_{DT_STRING}.pt")
             else:
                 torch.save(model.state_dict(), f"original_pretrained_model.pt")
 
