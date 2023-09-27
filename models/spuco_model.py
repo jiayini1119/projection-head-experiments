@@ -59,7 +59,6 @@ class SpuCoModel(nn.Module):
                         nn.Linear(representation_dim, hidden_dim),
                         nn.ReLU(),
                         nn.Linear(hidden_dim, representation_dim),
-                        nn.ReLU(),
                     )
                 else:
                     # initialize the projection head as an identity function
@@ -67,13 +66,20 @@ class SpuCoModel(nn.Module):
                         nn.Linear(representation_dim, hidden_dim),
                         SymmetricReLU(),
                         nn.Linear(hidden_dim, representation_dim),
-                        SymmetricReLU(),
                     )
                      
                     self.projection_head[0].weight.data.copy_(torch.eye(representation_dim))
                     self.projection_head[0].bias.data.fill_(0)
                     self.projection_head[2].weight.data.copy_(torch.eye(hidden_dim))
                     self.projection_head[2].bias.data.fill_(0)
+            else:
+                self.projection_head = nn.Sequential(
+                    nn.Linear(representation_dim, hidden_dim), 
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, hidden_dim),  
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, representation_dim)  
+                )
         else:
             self.projection_head = None
 

@@ -95,13 +95,13 @@ ds, loader = imagenet_datasets.get_imagenet_like(
 
 if args.without_ph:
     if args.pretrain_method == "standardSL":
-        # model = torchvision.models.resnet50(pretrained=True).to(device)
+        model = torchvision.models.resnet50(pretrained=True).to(device)
 
-        # load the finetuned model
-        model = torchvision.models.resnet50(pretrained=False).to(device)
-        checkpoint = torch.load("/home/jennyni/projection-head-experiments/original_pretrained_model.pt", map_location=device)
-        state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
-        model.load_state_dict(state_dict)
+        # # load the finetuned model
+        # model = torchvision.models.resnet50(pretrained=False).to(device)
+        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/original_pretrained_model.pt", map_location=device)
+        # state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+        # model.load_state_dict(state_dict)
 
 
 
@@ -141,15 +141,15 @@ all_y = np.concatenate(all_y)
 
 
 
-np.savez(os.path.join(
-        args.dataset_dir,
-        f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
-    embeddings=all_embeddings,
-    labels=all_y)
-
-
 # np.savez(os.path.join(
 #         args.dataset_dir,
-#         f"new_org_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+#         f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
 #     embeddings=all_embeddings,
 #     labels=all_y)
+
+
+np.savez(os.path.join(
+        args.dataset_dir,
+        f"check_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+    embeddings=all_embeddings,
+    labels=all_y)
