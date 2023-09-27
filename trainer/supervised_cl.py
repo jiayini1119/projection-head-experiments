@@ -19,6 +19,13 @@ def forward_pass(self, batch):
     loss = self.criterion(outputs, labels)
     return loss, outputs, labels
 
+def forward_pass_ori(self, batch):  
+    inputs, labels = batch
+    inputs, labels = inputs.to(self.device), labels.to(self.device)
+    outputs = self.model.get_representation(inputs, use_ph=False)
+    loss = self.criterion(outputs, labels)
+    return loss, outputs, labels
+
 class SCL(BaseRobustTrain):
     """
     Supervised Contrastive Learning
@@ -35,7 +42,8 @@ class SCL(BaseRobustTrain):
         lr_scheduler=None,
         max_grad_norm=None,
         val_evaluator: Evaluator_PH = None,
-        verbose=False
+        verbose=False,
+        use_ph=True,
     ):
         seed_randomness(torch_module=torch, numpy_module=np, random_module=random)
 
@@ -43,18 +51,33 @@ class SCL(BaseRobustTrain):
 
         self.num_epochs = num_epochs
 
-        self.trainer = Trainer(
-            trainset=trainset,
-            model=model,
-            batch_size=batch_size,
-            optimizer=optimizer,
-            lr_scheduler=lr_scheduler,
-            max_grad_norm=max_grad_norm,
-            criterion=criterion,
-            forward_pass=forward_pass,
-            verbose=verbose,
-            device=device
-        )
+        if use_ph:
+            self.trainer = Trainer(
+                trainset=trainset,
+                model=model,
+                batch_size=batch_size,
+                optimizer=optimizer,
+                lr_scheduler=lr_scheduler,
+                max_grad_norm=max_grad_norm,
+                criterion=criterion,
+                forward_pass=forward_pass,
+                verbose=verbose,
+                device=device
+            )
+        else:
+            self.trainer = Trainer(
+                trainset=trainset,
+                model=model,
+                batch_size=batch_size,
+                optimizer=optimizer,
+                lr_scheduler=lr_scheduler,
+                max_grad_norm=max_grad_norm,
+                criterion=criterion,
+                forward_pass=forward_pass_ori,
+                verbose=verbose,
+                device=device
+            )
+
 
 
 
