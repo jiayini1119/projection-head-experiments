@@ -66,7 +66,7 @@ def main(args):
             batch_size=args.train_batch_size,
             optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9),
             device=device,
-            verbose=False,
+            verbose=True,
             use_ph=not args.without_ph,
         )
 
@@ -87,7 +87,7 @@ def main(args):
 
     print(evaluator.worst_group_accuracy)
 
-    torch.save(model.state_dict(), f'final_original_{args.dataset}_{args.seed}_{args.pretrain_method}_{DT_STRING}.pt')
+    torch.save(model.state_dict(), f'finalized_ori_{args.dataset}_{args.seed}_{args.pretrain_method}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--weight-decay', type=float, default=1e-03, help='learning rate') 
     parser.add_argument("--train-batch-size", type=int, default=32, help='Training batch size')
     parser.add_argument("--test-batch-size", type=int, default=64, help='Testing batch size')
-    parser.add_argument('--seed', type=int, default=10, help="Seed for randomness")
+    parser.add_argument('--seed', type=int, default=0, help="Seed for randomness")
     parser.add_argument('--num-epochs', type=int, default=100, help="number of epochs to train")
     parser.add_argument("--test-freq", type=int, default=20, help='Test frequency')
     parser.add_argument("--pretrain-method", type=str, default="ERM", choices=['ERM', 'SCL'], help='pretrain method')

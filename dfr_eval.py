@@ -114,32 +114,32 @@ if __name__ == '__main__':
     parser.add_argument("--identity-init", action='store_true', help='Whether to initialize projection head as identity')
 
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    main(args)
+    # main(args)
 
-    # # Try multiple seeds
+    # Try multiple seeds
 
-    # seeds = [0, 10, 20, 30, 40]  
-    # worst_group_accuracies = []
-    # average_accuracies = []
+    seeds = [0, 10, 20]  
+    worst_group_accuracies = []
+    average_accuracies = []
 
-    # for seed in seeds:
-    #     args = parser.parse_args()
-    #     args.seed = seed  
-    #     worst_group_accuracy, average_accuracy = main(args)
+    for seed in seeds:
+        args = parser.parse_args()
+        args.seed = seed  
+        worst_group_accuracy, average_accuracy = main(args)
         
-    #     worst_group_accuracies.append(worst_group_accuracy)
-    #     average_accuracies.append(average_accuracy)
+        worst_group_accuracies.append(worst_group_accuracy)
+        average_accuracies.append(average_accuracy)
 
-    # avg_worst_group_accuracy = np.mean(worst_group_accuracies)
-    # std_worst_group_accuracy = np.std(worst_group_accuracies)
+    avg_worst_group_accuracy = np.mean(worst_group_accuracies)
+    std_worst_group_accuracy = np.std(worst_group_accuracies)
     
-    # avg_average_accuracy = np.mean(average_accuracies)
-    # std_average_accuracy = np.std(average_accuracies)
+    avg_average_accuracy = np.mean(average_accuracies)
+    std_average_accuracy = np.std(average_accuracies)
 
-    # print(f"Worst Group Accuracy: {avg_worst_group_accuracy * 100:.1f}±{std_worst_group_accuracy * 100:.1f}")
-    # print(f"Average Accuracy: {avg_average_accuracy * 100:.1f}±{std_average_accuracy * 100:.1f}")
+    print(f"Worst Group Accuracy: {avg_worst_group_accuracy * 100:.1f}±{std_worst_group_accuracy * 100:.1f}")
+    print(f"Average Accuracy: {avg_average_accuracy * 100:.1f}±{std_average_accuracy * 100:.1f}")
 
 
 
