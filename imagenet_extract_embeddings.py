@@ -97,10 +97,13 @@ if args.without_ph:
     if args.pretrain_method == "standardSL":
         model = torchvision.models.resnet50(pretrained=True).to(device)
 
+        print(model)
+
         # # load the finetuned model
-        # model = torchvision.models.resnet50(pretrained=False).to(device)
+        # model = model_factory("resnet50", ds[0][0].shape, 1000).to(device)
         # checkpoint = torch.load("/home/jennyni/projection-head-experiments/original_pretrained_model.pt", map_location=device)
         # state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+        # print(state_dict.keys())
         # model.load_state_dict(state_dict)
 
 
@@ -116,7 +119,8 @@ else:
     checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2020:05:35.080839.pt", map_location=device)
     # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2118:46:39.757465.pt", map_location=device)  
     # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2118:46:44.362153.pt", map_location=device)  
-    # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2205:40:56.865258.pt", map_location=device)  
+    # checkpoint = torch.load("/home/jennyni/projection-head-experiments/imagenet_pretrained_model_2023-09-2205:40:56.865258.pt", map_location=device) 
+    # checkpoint = torch.load("/home/jennyni/projection-head-experiments/sep28_imagenet_pretrained_model_2023-09-2801:53:17.382991.pt", map_location=device) 
     state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
     model.load_state_dict(state_dict)
 
@@ -143,13 +147,13 @@ all_y = np.concatenate(all_y)
 
 # np.savez(os.path.join(
 #         args.dataset_dir,
-#         f"new_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+#         f"finalcheck_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
 #     embeddings=all_embeddings,
 #     labels=all_y)
 
 
 np.savez(os.path.join(
         args.dataset_dir,
-        f"check_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+        f"finalcheck_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
     embeddings=all_embeddings,
     labels=all_y)

@@ -12,6 +12,7 @@ from models.model_factory import *
 from datetime import datetime
 
 import torchvision.models as models
+import torchvision
 
 
 
@@ -180,23 +181,29 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # create model
     if args.use_original:
-        model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True)
+        model = torchvision.models.resnet50(pretrained=True)
     else:
         model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True, hidden_dim=2048)
 
-        # freeze blocks 1-3 and only re-train block 4 with additional projection head from scratch.
-        for name, param in model.named_parameters():
-            if not name.startswith('projection_head') and not name.startswith('classifier') and not name.startswith('backbone.layer4'):
-                param.requires_grad = False
+        # # load pretrained weight
+        # loc = 'cuda:{}'.format(args.gpu)
+        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/retry_imagenet_pretrained_model_2023-09-2620:23:43.736312.pt", map_location=loc)
+        # state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
+        # model.load_state_dict(state_dict)
 
-        default_resnet = models.resnet50()
+        # # freeze blocks 1-3 and only re-train block 4 with additional projection head from scratch.
+        # for name, param in model.named_parameters():
+        #     if not name.startswith('projection_head') and not name.startswith('classifier') and not name.startswith('backbone.layer4'):
+        #         param.requires_grad = False
 
-        for (name, param), (default_name, default_param) in zip(model.named_parameters(), default_resnet.named_parameters()):
-            if name.startswith('backbone.layer4'):
-                param.data = default_param.data.clone()
+        # default_resnet = models.resnet50()
 
-        for name, param in model.named_parameters():
-            print(name, "requires grad: ", param.requires_grad)
+        # for (name, param), (default_name, default_param) in zip(model.named_parameters(), default_resnet.named_parameters()):
+        #     if name.startswith('backbone.layer4'):
+        #         param.data = default_param.data.clone()
+
+        # # for name, param in model.named_parameters():
+        # #     print(name, "requires grad: ", param.requires_grad)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -241,14 +248,10 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().to(device)
 
-    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-    #                             momentum=args.momentum,
-    #                             weight_decay=args.weight_decay)
-
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
+    optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-    
+
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
     
@@ -307,9 +310,9 @@ def main_worker(gpu, ngpus_per_node, args):
             # }, is_best)
 
             if not args.use_original:
-                torch.save(model.state_dict(), f"retry_imagenet_pretrained_model_{DT_STRING}.pt")
+                torch.save(model.state_dict(), f"sep28_imagenet_pretrained_model_{DT_STRING}.pt")
             else:
-                torch.save(model.state_dict(), f"original_pretrained_model.pt")
+                torch.save(model.state_dict(), f"28_original_pretrained_model.pt")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, args):
