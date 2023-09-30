@@ -100,10 +100,10 @@ if args.without_ph:
         print(model)
 
         # # load the finetuned model
-        # model = model_factory("resnet50", ds[0][0].shape, 1000).to(device)
-        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/original_pretrained_model.pt", map_location=device)
+        # print("finetuned")
+        # model = torchvision.models.resnet50(pretrained=True).to(device)
+        # checkpoint = torch.load("/home/jennyni/projection-head-experiments/28_original_pretrained_model.pt", map_location=device)
         # state_dict = {k.replace('module.', ''): v for k, v in checkpoint.items()}
-        # print(state_dict.keys())
         # model.load_state_dict(state_dict)
 
 
@@ -145,15 +145,15 @@ all_y = np.concatenate(all_y)
 
 
 
-# np.savez(os.path.join(
-#         args.dataset_dir,
-#         f"finalcheck_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
-#     embeddings=all_embeddings,
-#     labels=all_y)
-
-
 np.savez(os.path.join(
         args.dataset_dir,
-        f"finalcheck_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+        f"30finalcheck_ph_{args.dataset}_{args.use_ph}_{args.split}_{args.pretrain_method}_embeddings.npz"),
     embeddings=all_embeddings,
     labels=all_y)
+
+
+# np.savez(os.path.join(
+#         args.dataset_dir,
+#         f"29_{args.dataset}_{args.use_prev_block}_{args.split}_{args.pretrain_method}_embeddings.npz"),
+#     embeddings=all_embeddings,
+#     labels=all_y)
