@@ -139,8 +139,8 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
     # Data loading code
-    traindir = os.path.join("/home/jennyni/datasets/imagenet", 'train')
-    valdir = os.path.join("/home/jennyni/datasets/imagenet", 'val')
+    traindir = os.path.join("/home/data/imagenet", 'train')
+    valdir = os.path.join("/home/data/imagenet", 'val')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                     std=[0.229, 0.224, 0.225])
 
@@ -183,7 +183,7 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.use_original:
         model = torchvision.models.resnet50(pretrained=True)
     else:
-        model = model_factory("resnet50", train_dataset[0][0].shape, 1000, pretrained=True, hidden_dim=2048)
+        model = model_factory("resnet50", train_dataset[0][0].shape, 1000, kappa=1.01, pretrained=True, hidden_dim=2048)
 
         # # load pretrained weight
         # loc = 'cuda:{}'.format(args.gpu)
@@ -310,9 +310,9 @@ def main_worker(gpu, ngpus_per_node, args):
             # }, is_best)
 
             if not args.use_original:
-                torch.save(model.state_dict(), f"sep28_imagenet_pretrained_model_{DT_STRING}.pt")
+                torch.save(model.state_dict(), f"Jan16_imagenet_pretrained_model_{DT_STRING}.pt")
             else:
-                torch.save(model.state_dict(), f"28_original_pretrained_model.pt")
+                torch.save(model.state_dict(), f"Jan16_original_pretrained_model.pt")
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, args):

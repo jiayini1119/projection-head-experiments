@@ -25,12 +25,10 @@ def main(args):
 
     if not args.without_ph:
         # model with projection head
-        model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer, identity_init=args.identity_init).to(device)
+        model = model_factory("resnet50", trainset[0][0].shape, 2, kappa=args.kappa, pretrained=not args.random_init, hidden_dim=2048, mult_layer=args.mult_layer, identity_init=args.identity_init).to(device)
     else:
         model = model_factory("resnet50", trainset[0][0].shape, 2, pretrained=not args.random_init).to(device)
-
-    print(model)
-
+    
     val_evaluator = Evaluator_PH(
         testset=valset,
         group_partition=valset.group_partition,
@@ -87,7 +85,7 @@ def main(args):
 
     print(evaluator.worst_group_accuracy)
 
-    torch.save(model.state_dict(), f'finalized_ori_{args.dataset}_{args.seed}_{args.pretrain_method}_{DT_STRING}.pt')
+    torch.save(model.state_dict(), f'finalized_ori_{args.dataset}_{args.seed}_{args.pretrain_method}_{args.kappa}_{DT_STRING}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='erm pretrain')
@@ -107,6 +105,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--mult-layer", action='store_true', help='Whether to use projection head with two hidden layers')
     parser.add_argument("--temperature", type=float, default=0.5, help='temperature for supervised contrastive loss')
+
+    parser.add_argument("--kappa", type=float, default=1.05, help='kappa')
+
 
 
     args = parser.parse_args()

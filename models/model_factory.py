@@ -28,7 +28,7 @@ class SupportedModels(Enum):
     ResNet18 = "resnet18"
     ResNet50 = "resnet50"
 
-def model_factory(arch: str, input_shape: Tuple[int, int, int], num_classes: int, pretrained: bool = True, hidden_dim: Optional[int] = None, mult_layer: bool=False, identity_init: bool=False):
+def model_factory(arch: str, input_shape: Tuple[int, int, int], num_classes: int, kappa: Optional[float] = None, pretrained: bool = True, hidden_dim: Optional[int] = None, mult_layer: bool=False, identity_init: bool=False):
     """
     Factory function to create a SpuCoModel based on the specified architecture.
 
@@ -87,4 +87,5 @@ def model_factory(arch: str, input_shape: Tuple[int, int, int], num_classes: int
         mult_layer=mult_layer,
         identity_init=identity_init,
         num_classes=num_classes,
+        kappa=kappa,
     )

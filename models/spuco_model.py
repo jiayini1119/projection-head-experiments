@@ -9,6 +9,24 @@ from spuco.utils.random_seed import seed_randomness
 
 import torch.nn.functional as F
 
+class ReweightProjectionHead(nn.Module):
+    def __init__(self, representation_dim, kappa):
+        super(ReweightProjectionHead, self).__init__()
+        self.representation_dim = representation_dim
+        self.kappa = kappa
+        if self.kappa is not None:
+            self.reweights = nn.Parameter(torch.tensor([1/self.kappa**i for i in range(representation_dim)]))
+            self.reweights.requires_grad = False
+        else:
+            self.reweights = None
+
+    def forward(self, x):
+        if self.reweights is not None:
+            x = x * self.reweights
+        else:
+            raise ValueError("no projection head used")
+        return x
+
 
 class SymmetricReLU(nn.Module):
     def __init__(self, b=0.0):
@@ -30,6 +48,7 @@ class SpuCoModel(nn.Module):
         backbone: nn.Module, 
         representation_dim: int,
         num_classes: int,
+        kappa: Optional[float] = None,
         mult_layer: bool = False,
         identity_init: bool = False,
         hidden_dim: Optional[int] = None,
@@ -51,15 +70,25 @@ class SpuCoModel(nn.Module):
         self.backbone = backbone 
         self.representation_dim = representation_dim
 
+        self.kappa = kappa
+
         # Projection head 
         if hidden_dim is not None:
             if not mult_layer:
                 if not identity_init:
-                    self.projection_head = nn.Sequential(
-                        nn.Linear(representation_dim, hidden_dim),
-                        nn.ReLU(),
-                        nn.Linear(hidden_dim, representation_dim),
-                    )
+                    # self.projection_head = nn.Sequential(
+                    #     nn.Linear(representation_dim, hidden_dim),
+                    #     nn.ReLU(),
+                    #     nn.Linear(hidden_dim, representation_dim),
+                    # )
+
+                    # change
+                    self.projection_head = ReweightProjectionHead(representation_dim=representation_dim, kappa=kappa)
+
+                    for name, param in self.projection_head.named_parameters():
+                        print(name, param)
+
+
                 else:
                     # initialize the projection head as an identity function
                     self.projection_head = nn.Sequential(
@@ -102,6 +131,7 @@ class SpuCoModel(nn.Module):
 
         encoder_rep = self.backbone(x)
         return self.projection_head(encoder_rep) if use_ph else encoder_rep
+        # return encoder_rep * self.reweight if use_ph else encoder_rep
 
 
     def forward(self, x, use_ph: Optional[bool] = None):
@@ -123,3 +153,5 @@ class SpuCoModel(nn.Module):
             use_ph = self.projection_head is not None
         encoder_rep = self.backbone(x)
         return self.classifier(self.projection_head(encoder_rep)) if use_ph else self.classifier(encoder_rep)
+
+        # return self.classifier(self.reweight * encoder_rep) if use_ph else self.classifier(encoder_rep)
