@@ -71,6 +71,8 @@ parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
 parser.add_argument('--gpu', default=None, type=int,
                     help='GPU id to use.')
+parser.add_argument('--kappa', default=1, type=float,
+                    help='kappa')
 parser.add_argument("--use-original", action='store_true', help='Whether to use the original network without projection head')
 parser.add_argument('--multiprocessing-distributed', action='store_true',
                     help='Use multi-processing distributed training to launch '
@@ -183,7 +185,7 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.use_original:
         model = torchvision.models.resnet50(pretrained=True)
     else:
-        model = model_factory("resnet50", train_dataset[0][0].shape, 1000, kappa=1.01, pretrained=True, hidden_dim=2048)
+        model = model_factory("resnet50", train_dataset[0][0].shape, 1000, kappa=args.kappa, pretrained=True, hidden_dim=2048)
 
         # # load pretrained weight
         # loc = 'cuda:{}'.format(args.gpu)
@@ -310,7 +312,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # }, is_best)
 
             if not args.use_original:
-                torch.save(model.state_dict(), f"Jan16_imagenet_pretrained_model_{DT_STRING}.pt")
+                torch.save(model.state_dict(), f"Feb_imagenet_pretrained_model_{args.kappa}_{DT_STRING}.pt")
             else:
                 torch.save(model.state_dict(), f"Jan16_original_pretrained_model.pt")
 
